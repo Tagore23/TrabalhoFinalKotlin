@@ -65,8 +65,8 @@ class ReceitasViewModel(application: Application) : AndroidViewModel(application
 
     fun buscarReceitasPorUsuario(usuarioId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            val usuarioReceita = receitasDao.buscarReceitasPorUsuario(usuarioId)
-            _receitasLiveData.postValue(usuarioReceita.receitas)
+           // val usuarioReceita = receitasDao.buscarReceitasPorUsuario(usuarioId)
+           // _receitasLiveData.postValue(usuarioReceita.receitas)
         }
     }
 }

@@ -3,7 +3,7 @@ package com.example.trabalhofinalkotlin.model.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "receitass")
+@Entity(tableName = "receitas")
 data class Receitas(
     @PrimaryKey(autoGenerate = true)
     val id: Int,

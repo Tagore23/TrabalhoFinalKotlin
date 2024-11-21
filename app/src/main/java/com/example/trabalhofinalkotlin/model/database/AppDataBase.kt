@@ -9,7 +9,7 @@ import com.example.trabalhofinalkotlin.model.database.dao.ReceitasDao
 import com.example.trabalhofinalkotlin.model.entity.Receitas
 import com.example.trabalhofinalkotlin.model.entity.Usuario
 
-@Database(entities = [Usuario::class],[Receitas::class], version = 1)
+@Database(entities = [Usuario::class, Receitas::class], version = 1)
 abstract class AppDataBase : RoomDatabase(){
     // DAO para a tabela 'usuarios'
     abstract fun usuarioDao(): UsuarioDao
