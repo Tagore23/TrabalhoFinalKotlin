@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
@@ -23,6 +24,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.trabalhofinalkotlin.viewmodel.ReceitasViewModelFactory
 import com.example.trabalhofinalkotlin.model.database.AppDataBase
+import com.example.trabalhofinalkotlin.model.entity.Receitas
 import com.example.trabalhofinalkotlin.model.entity.Usuario
 import com.example.trabalhofinalkotlin.viewmodel.ReceitasViewModel
 import com.example.trabalhofinalkotlin.viewmodel.UsuarioViewModel
@@ -187,44 +189,115 @@ fun ReceitasScreen(
     usuarioId: Int
 ) {
     val receitas by receitasViewModel.receitasLiveData.observeAsState(emptyList())
+
+    // Estados para gerenciar o formulário
     var titulo by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
     var categoria by remember { mutableStateOf("") }
+    var receitaToEdit by remember { mutableStateOf<Receitas?>(null) } // Receita sendo editada ou null para criação
+
     val context = LocalContext.current
 
-    // Carrega receitas ao iniciar a tela
-    LaunchedEffect(usuarioId) {
-        if (usuarioId != 0) {
-            receitasViewModel.buscarReceitasPorUsuario(usuarioId)
-        }
-    }
-
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Receitas")
+        Text("Receitas", modifier = Modifier.padding(bottom = 16.dp))
 
-        TextField(value = titulo, onValueChange = { titulo = it }, label = { Text("Título") }, modifier = Modifier.fillMaxWidth())
-        TextField(value = descricao, onValueChange = { descricao = it }, label = { Text("Descrição") }, modifier = Modifier.fillMaxWidth())
-        TextField(value = categoria, onValueChange = { categoria = it }, label = { Text("Categoria") }, modifier = Modifier.fillMaxWidth())
-
+        // Formulário de criação/edição
+        TextField(
+            value = titulo,
+            onValueChange = { titulo = it },
+            label = { Text("Título") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        TextField(
+            value = descricao,
+            onValueChange = { descricao = it },
+            label = { Text("Descrição") },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        )
+        TextField(
+            value = categoria,
+            onValueChange = { categoria = it },
+            label = { Text("Categoria") },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        )
         Button(
             onClick = {
-                if (titulo.isNotEmpty() && descricao.isNotEmpty() && categoria.isNotEmpty() && usuarioId != 0) {
-                    receitasViewModel.adicionarReceita(titulo, descricao, categoria, usuarioId)
+                if (titulo.isNotEmpty() && descricao.isNotEmpty() && categoria.isNotEmpty()) {
+                    receitaToEdit?.let { receita ->
+                        // Atualizar receita existente
+                        receitasViewModel.editarReceita(
+                            id = receita.id,
+                            titulo = titulo,
+                            descricao = descricao,
+                            usuarioId = usuarioId
+                        )
+                        Toast.makeText(context, "Receita atualizada!", Toast.LENGTH_SHORT).show()
+                    } ?: run {
+                        // Criar nova receita
+                        receitasViewModel.adicionarReceita(
+                            titulo = titulo,
+                            descricao = descricao,
+                            categoria = categoria,
+                            usuarioId = usuarioId
+                        )
+                        Toast.makeText(context, "Receita criada!", Toast.LENGTH_SHORT).show()
+                    }
+                    // Limpar formulário e estado de edição
                     titulo = ""
                     descricao = ""
                     categoria = ""
+                    receitaToEdit = null
                 } else {
-                    Toast.makeText(context, "Preencha todos os campos e faça login.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Preencha todos os campos!", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
         ) {
-            Text("Adicionar Receita")
+            Text(if (receitaToEdit != null) "Atualizar Receita" else "Salvar Receita")
         }
 
-        LazyColumn(modifier = Modifier.padding(top = 16.dp)) {
+        // Lista de receitas
+        LazyColumn(modifier = Modifier.weight(1f).padding(top = 16.dp)) {
             items(receitas) { receita ->
-                Text("${receita.titulo} - ${receita.descricao}", modifier = Modifier.fillMaxWidth().padding(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("${receita.titulo} - ${receita.descricao}")
+                        Text("Categoria: ${receita.categoria}")
+                    }
+                    Button(
+                        onClick = {
+                            // Preencher formulário com os dados da receita para edição
+                            receitaToEdit = receita
+                            titulo = receita.titulo
+                            descricao = receita.descricao
+                            categoria = receita.categoria
+                        },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .width(100.dp)
+                            .padding(horizontal = 4.dp)
+                    ) {
+                        Text("Editar")
+                    }
+                    // Botão de Excluir
+                    Button(
+                        onClick = {
+                            // Excluir a receita e atualizar a lista
+                            receitasViewModel.excluirReceita(receita.id, usuarioId)
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .width(100.dp)
+                            .padding(horizontal = 4.dp)
+                    ) {
+                        Text("Excluir")
+                    }
+                }
             }
         }
 
@@ -236,6 +309,8 @@ fun ReceitasScreen(
         }
     }
 }
+
+
 
 
 
