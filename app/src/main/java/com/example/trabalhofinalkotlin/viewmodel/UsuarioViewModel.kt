@@ -7,6 +7,7 @@ import com.example.trabalhofinalkotlin.model.entity.Usuario
 import com.example.mvvm2.model.Validacao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class UsuarioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
 
@@ -53,16 +54,19 @@ class UsuarioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 usuarioDao.inserir(usuario)
-                onResult(true, "Cadastro realizado com sucesso!")  // Sucesso
+                // Mudando para a Main Thread para executar o callback
+                withContext(Dispatchers.Main) {
+                    onResult(true, "Cadastro realizado com sucesso!") // Sucesso
+                }
             } catch (e: Exception) {
                 e.printStackTrace() // Imprime a pilha de erros
-                onResult(false, "Erro ao cadastrar usuário. Tente novamente.")  // Falha
+                // Mudando para a Main Thread para executar o callback
+                withContext(Dispatchers.Main) {
+                    onResult(false, "Erro ao cadastrar usuário. Tente novamente.") // Falha
+                }
             }
         }
+
     }
 
 }
-
-
-
-
