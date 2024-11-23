@@ -22,14 +22,14 @@ class ReceitasViewModel(private val receitasDao: ReceitasDao) : ViewModel() {
         }
     }
 
-    fun editarReceita(id: Int, titulo: String, descricao: String) {
+    fun editarReceita(id: Int, titulo: String, descricao: String, usuarioId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             receitasDao.atualizarReceita(id, titulo, descricao)
-            buscarReceitasPorUsuario(id) // Corrigido para passar `usuarioId` e atualizar a lista
+            buscarReceitasPorUsuario(usuarioId) // Atualiza a lista de receitas
         }
     }
 
-    fun excluirReceita(id: Int, usuarioId: Int) { // Incluindo `usuarioId` para atualizar a lista de receitas
+    fun excluirReceita(id: Int, usuarioId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             receitasDao.excluirReceita(id)
             buscarReceitasPorUsuario(usuarioId) // Atualiza a lista após exclusão
@@ -43,4 +43,5 @@ class ReceitasViewModel(private val receitasDao: ReceitasDao) : ViewModel() {
         }
     }
 }
+
 

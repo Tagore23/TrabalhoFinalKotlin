@@ -16,3 +16,4 @@ interface UsuarioDao {
     @Query("SELECT * FROM usuarios WHERE usuId = :id")
     suspend fun buscarPorId(id: Int): Usuario?
 }
+

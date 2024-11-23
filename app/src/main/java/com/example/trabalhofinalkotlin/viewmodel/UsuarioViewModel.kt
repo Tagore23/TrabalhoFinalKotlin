@@ -10,7 +10,21 @@ import kotlinx.coroutines.launch
 
 class UsuarioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
 
-    fun registrarUsuario(nome: String, email: String, senha: String, confirmacaoSenha: String, onResult: (Boolean, String?) -> Unit) {
+    fun loginUsuario(email: String, senha: String, onResult: (Usuario?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val usuario = usuarioDao.login(email, senha)
+            onResult(usuario)
+        }
+    }
+
+
+    fun registrarUsuario(
+        nome: String,
+        email: String,
+        senha: String,
+        confirmacaoSenha: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
         // Verificando campos vazios
         if (Validacao.haCamposEmBranco(nome, email, senha, confirmacaoSenha)) {
             onResult(false, "Preencha todos os campos.")
@@ -32,7 +46,7 @@ class UsuarioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
             return
         }
 
-        // Criando o usuário
+        // Criando o usuário (não definindo usuId, pois é auto-gerado)
         val usuario = Usuario(usuId = 0, nome = nome, email = email, senha = senha)
 
         // Inserindo no banco
@@ -41,17 +55,14 @@ class UsuarioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
                 usuarioDao.inserir(usuario)
                 onResult(true, "Cadastro realizado com sucesso!")  // Sucesso
             } catch (e: Exception) {
+                e.printStackTrace() // Imprime a pilha de erros
                 onResult(false, "Erro ao cadastrar usuário. Tente novamente.")  // Falha
             }
         }
     }
 
-
-    fun loginUsuario(email: String, senha: String, onResult: (Usuario?) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val usuario = usuarioDao.login(email, senha)
-            onResult(usuario)
-        }
-    }
 }
+
+
+
 
