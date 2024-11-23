@@ -13,22 +13,12 @@ class UsuarioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
 
     fun loginUsuario(email: String, senha: String, onResult: (Usuario?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val usuario = usuarioDao.login(email, senha) // Busca o usuário no banco
-                // Mudando para a Main Thread para atualizar a interface do usuário
-                withContext(Dispatchers.Main) {
-                    onResult(usuario) // Retorna o resultado ao callback
-                }
-            } catch (e: Exception) {
-                e.printStackTrace() // Loga o erro no console
-                // Em caso de erro, retorna null no callback
-                withContext(Dispatchers.Main) {
-                    onResult(null)
-                }
+            val usuario = usuarioDao.login(email, senha)
+            withContext(Dispatchers.Main) {
+                onResult(usuario)
             }
         }
     }
-
 
 
     fun registrarUsuario(

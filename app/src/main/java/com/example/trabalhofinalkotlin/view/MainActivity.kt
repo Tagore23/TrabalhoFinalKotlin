@@ -31,8 +31,9 @@ import com.example.trabalhofinalkotlin.viewmodel.UsuarioViewModelFactory
 class MainActivity : ComponentActivity() {
     private val receitasViewModel: ReceitasViewModel by viewModels {
         val dao = AppDataBase.getDatabase(applicationContext).receitasDao()
-        ReceitasViewModelFactory(dao)
+        ReceitasViewModelFactory(dao, applicationContext) // Passa o applicationContext
     }
+
 
     private val usuarioViewModel: UsuarioViewModel by viewModels {
         val dao = AppDataBase.getDatabase(applicationContext).usuarioDao()
@@ -62,13 +63,14 @@ fun MainScreen(
     // Componente de Navegação
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
-            LoginScreen(navController = navController, usuarioViewModel = usuarioViewModel)
+            LoginScreen(navController = navController, usuarioViewModel = usuarioViewModel, receitasViewModel = receitasViewModel)
         }
         composable("cadastro") {
             CadastroScreen(usuarioViewModel = usuarioViewModel, navController = navController)
         }
-        composable("receitas") {
-            ReceitasScreen(receitasViewModel = receitasViewModel, navController = navController)
+        composable("receitas/{usuarioId}") { backStackEntry ->
+            val usuarioId = backStackEntry.arguments?.getString("usuarioId")?.toIntOrNull() ?: 0
+            ReceitasScreen(receitasViewModel = receitasViewModel, navController = navController, usuarioId = usuarioId)
         }
     }
 }
@@ -78,6 +80,7 @@ fun MainScreen(
 @Composable
 fun LoginScreen(
     usuarioViewModel: UsuarioViewModel,
+    receitasViewModel: ReceitasViewModel,
     navController: NavHostController
 ) {
     var email by remember { mutableStateOf("") }
@@ -98,7 +101,12 @@ fun LoginScreen(
                 usuarioViewModel.loginUsuario(email, senha) { usuario ->
                     if (usuario != null) {
                         Toast.makeText(context, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
-                        navController.navigate("receitas")
+
+                        // Atualiza as receitas do usuário logado
+                        receitasViewModel.buscarReceitasPorUsuario(usuario.usuId)
+
+                        // Navega para a tela de receitas
+                        navController.navigate("receitas/${usuario.usuId}")
                     } else {
                         Toast.makeText(context, "E-mail ou senha inválidos", Toast.LENGTH_SHORT).show()
                     }
@@ -108,6 +116,8 @@ fun LoginScreen(
         ) {
             Text("Entrar")
         }
+
+
 
         TextButton(onClick = { navController.navigate("cadastro") }) {
             Text("Ainda não tem uma conta? Cadastre-se")
@@ -174,43 +184,36 @@ fun CadastroScreen(
 fun ReceitasScreen(
     receitasViewModel: ReceitasViewModel,
     navController: NavController,
+    usuarioId: Int
 ) {
     val receitas by receitasViewModel.receitasLiveData.observeAsState(emptyList())
     var titulo by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
     var categoria by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
-    // Supondo que você tenha o usuário logado
-    val usuarioId = remember { mutableStateOf(0) } // Inicializa com 0
-    val context = LocalContext.current // Aqui pegamos o contexto para usar no Toast
-
-    // Suponha que você tenha o usuário logado e o id seja armazenado
-    val usuarioLogado = remember { mutableStateOf<Usuario?>(null) }
-
-    // Quando o usuário fizer login, deve definir o `usuarioId`
-    LaunchedEffect(usuarioLogado.value) {
-        if (usuarioLogado.value != null) {
-            usuarioId.value = usuarioLogado.value?.usuId ?: 0
+    // Carrega receitas ao iniciar a tela
+    LaunchedEffect(usuarioId) {
+        if (usuarioId != 0) {
+            receitasViewModel.buscarReceitasPorUsuario(usuarioId)
         }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Receitas")
 
-        // Formulário para adicionar nova receita
         TextField(value = titulo, onValueChange = { titulo = it }, label = { Text("Título") }, modifier = Modifier.fillMaxWidth())
         TextField(value = descricao, onValueChange = { descricao = it }, label = { Text("Descrição") }, modifier = Modifier.fillMaxWidth())
         TextField(value = categoria, onValueChange = { categoria = it }, label = { Text("Categoria") }, modifier = Modifier.fillMaxWidth())
 
         Button(
             onClick = {
-                if (titulo.isNotEmpty() && descricao.isNotEmpty() && categoria.isNotEmpty() && usuarioId.value != 0) {
-                    receitasViewModel.adicionarReceita(titulo, descricao, categoria, usuarioId.value)
+                if (titulo.isNotEmpty() && descricao.isNotEmpty() && categoria.isNotEmpty() && usuarioId != 0) {
+                    receitasViewModel.adicionarReceita(titulo, descricao, categoria, usuarioId)
                     titulo = ""
                     descricao = ""
                     categoria = ""
                 } else {
-                    // Aqui chamamos o Toast corretamente
                     Toast.makeText(context, "Preencha todos os campos e faça login.", Toast.LENGTH_SHORT).show()
                 }
             },
@@ -219,7 +222,7 @@ fun ReceitasScreen(
             Text("Adicionar Receita")
         }
 
-        LazyColumn(modifier = Modifier.fillMaxHeight().padding(top = 16.dp)) {
+        LazyColumn(modifier = Modifier.padding(top = 16.dp)) {
             items(receitas) { receita ->
                 Text("${receita.titulo} - ${receita.descricao}", modifier = Modifier.fillMaxWidth().padding(8.dp))
             }
@@ -233,5 +236,8 @@ fun ReceitasScreen(
         }
     }
 }
+
+
+
 
 
